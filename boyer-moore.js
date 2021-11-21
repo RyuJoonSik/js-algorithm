@@ -1,48 +1,75 @@
-function buildBadMatchTable(str) {
-  let tableObj = {};
-  let strLength = str.length;
+function 나쁜_문자_테이블_생성(패턴) {
+  let 테이블 = new Array(256).fill(-1);
+  let 패턴_마지막_인덱스 = 패턴.length - 1;
 
-  for (let i = 0; i < strLength - 1; i++) {
-    tableObj[str[i]] = strLength - 1 - i;
+  for (let 패턴_인덱스 = 0; 패턴_인덱스 < 패턴_마지막_인덱스; 패턴_인덱스++) {
+    let 알파벳_코드 = 패턴[패턴_인덱스].charCodeAt(0);
+
+    테이블[알파벳_코드] = 패턴_인덱스;
   }
 
-  if (!tableObj[str[strLength - 1]]) {
-    tableObj[str[strLength - 1]] = strLength;
-  }
-
-  return tableObj;
+  return 테이블;
 }
 
-function boyerMoore(str, pattern) {
-  let badMatchTable = buildBadMatchTable(pattern);
-  let offset = 0;
-  let patternLastIndex = pattern.length - 1;
-  let scanIndex = patternLastIndex;
-  let maxOffset = str.length - pattern.length;
+function 착한_접미사_테이블_생성(패턴) {
+  let 패턴_길이 = 패턴.length;
+  let 테이블 = new Array(패턴_길이).fill(패턴_길이);
+  let 패턴_마지막_인덱스 = 패턴_길이 - 1;
+  let 기준_인덱스 = 0;
 
-  while (offset <= maxOffset) {
-    scanIndex = 0;
-
-    while (pattern[scanIndex] === str[scanIndex + offset]) {
-      if (scanIndex === patternLastIndex) {
-        return offset;
-      }
-
-      scanIndex++;
-    }
-
-    let badMatchString = str[offset + patternLastIndex];
-
-    if (badMatchTable[badMatchString]) {
-      offset += badMatchTable[badMatchString];
+  while (패턴_마지막_인덱스 > 0) {
+    if (
+      기준_인덱스 >= 0 &&
+      패턴[기준_인덱스] === 패턴[패턴_마지막_인덱스 + 기준_인덱스]
+    ) {
+      기준_인덱스--;
     } else {
-      offset += 1;
+      if (기준_인덱스 < 0) {
+        for (; 패턴_마지막_인덱스 + 기준_인덱스 >= 0; 기준_인덱스--) {
+          테이블[패턴_마지막_인덱스 + 기준_인덱스] = 패턴_마지막_인덱스;
+        }
+      } else {
+        테이블[패턴_마지막_인덱스 + 기준_인덱스] = 패턴_마지막_인덱스;
+      }
+      기준_인덱스 = 패턴_길이 - 패턴_마지막_인덱스;
+      패턴_마지막_인덱스--;
     }
   }
 
-  return -1;
+  return 테이블;
 }
-console.log(buildBadMatchTable("jam"));
-console.log(boyerMoore("jellyjam", "jam"));
-console.log(boyerMoore("jellyjam", "jelly"));
-console.log(boyerMoore("jellyjam", "sam"));
+
+function 보이어_무어_탐색(문자열, 패턴) {
+  let 문자열_길이 = 문자열.length;
+  let 패턴_길이 = 패턴.length;
+  let 나쁜_문자_테이블 = 나쁜_문자_테이블_생성(패턴);
+  let 착한_접미사_테이블 = 착한_접미사_테이블_생성(패턴);
+  let 기준_인덱스 = 0;
+  let 패턴_인덱스 = 0;
+  let 최대_기준_인덱스 = 문자열_길이 - 패턴_길이;
+
+  while (기준_인덱스 <= 최대_기준_인덱스) {
+    패턴_인덱스 = 패턴_길이 - 1;
+
+    while (
+      패턴_인덱스 >= 0 &&
+      패턴[패턴_인덱스] === 문자열[기준_인덱스 + 패턴_인덱스]
+    ) {
+      패턴_인덱스--;
+    }
+
+    if (패턴_인덱스 < 0) {
+      console.log(기준_인덱스);
+      기준_인덱스 += 착한_접미사_테이블[0];
+    } else {
+      let 불일치_문자_코드 = 문자열[기준_인덱스 + 패턴_인덱스].charCodeAt(0);
+      let 나쁜_문자_이동_횟수 =
+        패턴_인덱스 - 나쁜_문자_테이블[불일치_문자_코드];
+      let 착한_접미사_이동_횟수 = 착한_접미사_테이블[패턴_인덱스];
+
+      기준_인덱스 += Math.max(나쁜_문자_이동_횟수, 착한_접미사_이동_횟수);
+    }
+  }
+}
+
+보이어_무어_탐색("AABAACAADAABAAABAAABAAAB", "ABAAAB");
